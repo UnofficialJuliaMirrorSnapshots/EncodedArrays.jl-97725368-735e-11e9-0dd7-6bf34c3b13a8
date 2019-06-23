@@ -159,6 +159,9 @@ EncodedArray{T}(
     encoded::AbstractVector{UInt8}
 ) where {T} = EncodedArray{T, typeof(codec),typeof(encoded)}(codec, (len,), encoded)
 
+EncodedArray{T,N,C,DV}(A::EncodedArray{T,N,C}) where {T,N,C,DV} = EncodedArray{T,N,C,DV}(A.codec, A.size, A.encoded)
+Base.convert(::Type{EncodedArray{T,N,C,DV}}, A::EncodedArray{T,N,C}) where {T,N,C,DV} = EncodedArray{T,N,C,DV}(A)
+
 
 @inline Base.size(A::EncodedArray) = A.size
 @inline getcodec(A::EncodedArray) = A.codec
@@ -289,6 +292,12 @@ const VectorOfEncodedArrays{
 }
 
 export VectorOfEncodedArrays
+
+
+# Specialize getindex to properly support ArraysOfArrays, preventing
+# conversion to exact element type:
+@inline Base.getindex(A::StructArray{<:EncodedArray{T}}, I::Int...) where T =
+    EncodedArray{T}(A.codec[I...], A.size[I...], A.encoded[I...])
 
 
 const BroadcastedEncodeVectorOfArrays{T,N,C<:AbstractArrayCodec} = Base.Broadcast.Broadcasted{
